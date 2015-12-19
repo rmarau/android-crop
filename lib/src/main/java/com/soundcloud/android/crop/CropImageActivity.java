@@ -49,6 +49,12 @@ public class CropImageActivity extends MonitoredActivity {
 
     private final Handler handler = new Handler();
 
+    private int layoutResId = R.layout.crop__activity_crop;
+    private int resIdCropImage = R.id.crop_image;
+    private int resIdBtnDone = R.id.btn_done;
+    private int resIdBtnCancel = R.id.btn_cancel;
+
+    // the aspect ratio of the image (default is 1:1)
     private int aspectX;
     private int aspectY;
 
@@ -68,33 +74,65 @@ public class CropImageActivity extends MonitoredActivity {
     private HighlightView cropView;
 
     @Override
-    public void onCreate(Bundle icicle) {
-        super.onCreate(icicle);
-        setupWindowFlags();
-        setupViews();
+    public void onCreate(final Bundle icicle) {
 
-        loadInput();
-        if (rotateBitmap == null) {
-            finish();
+        super.onCreate(icicle);
+        this.setupWindowFlags();
+
+        this.loadExtras();
+        this.setupViews();
+        this.loadInput();
+        if (this.rotateBitmap == null) {
+            this.finish();
             return;
         }
-        startCrop();
+        this.startCrop();
+
     }
 
     @TargetApi(Build.VERSION_CODES.KITKAT)
     private void setupWindowFlags() {
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         }
     }
 
-    private void setupViews() {
-        setContentView(R.layout.crop__activity_crop);
+    /**
+     * will load the extras passed with the intent
+     */
+    private void loadExtras() {
 
-        imageView = (CropImageView) findViewById(R.id.crop_image);
-        imageView.context = this;
-        imageView.setRecycler(new ImageViewTouchBase.Recycler() {
+        final Intent intent = getIntent();
+        final Bundle extras = intent.getExtras();
+
+        if (extras != null) {
+            this.aspectX = extras.getInt(Crop.Extra.ASPECT_X, 1);
+            this.aspectY = extras.getInt(Crop.Extra.ASPECT_Y, 1);
+            this.maxX = extras.getInt(Crop.Extra.MAX_X);
+            this.maxY = extras.getInt(Crop.Extra.MAX_Y);
+            this.saveUri = extras.getParcelable(MediaStore.EXTRA_OUTPUT);
+
+            // load data for the usage of custom layouts
+            this.layoutResId = extras.getInt(Crop.Extra.LAYOUT_ID, R.layout.crop__activity_crop);
+            this.resIdCropImage = extras.getInt(Crop.Extra.LAYOUT_ID_CROP_IMAGE, R.id.crop_image);
+            this.resIdBtnDone = extras.getInt(Crop.Extra.LAYOUT_ID_BTN_DONE, R.id.btn_done);
+            this.resIdBtnCancel = extras.getInt(Crop.Extra.LAYOUT_ID_BTN_CANCEL, R.id.btn_cancel);
+        }
+
+
+    }
+
+    /**
+     * will setup the layout for the activity
+     */
+    private void setupViews() {
+
+        this.setContentView(this.layoutResId);
+
+        this.imageView = (CropImageView) findViewById(this.resIdCropImage);
+        this.imageView.context = this;
+        this.imageView.setRecycler(new ImageViewTouchBase.Recycler() {
             @Override
             public void recycle(Bitmap b) {
                 b.recycle();
@@ -102,43 +140,40 @@ public class CropImageActivity extends MonitoredActivity {
             }
         });
 
-        findViewById(R.id.btn_cancel).setOnClickListener(new View.OnClickListener() {
+        this.findViewById(this.resIdBtnCancel).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 setResult(RESULT_CANCELED);
                 finish();
             }
         });
 
-        findViewById(R.id.btn_done).setOnClickListener(new View.OnClickListener() {
+        this.findViewById(this.resIdBtnDone).setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 onSaveClicked();
             }
         });
     }
 
+    /**
+     * load the bitmap from the given source Uri,
+     * get all the intent extras & setup the aspect ratio for the cropping,
+     * define the maximum of the image size
+     */
     private void loadInput() {
-        Intent intent = getIntent();
-        Bundle extras = intent.getExtras();
 
-        if (extras != null) {
-            aspectX = extras.getInt(Crop.Extra.ASPECT_X);
-            aspectY = extras.getInt(Crop.Extra.ASPECT_Y);
-            maxX = extras.getInt(Crop.Extra.MAX_X);
-            maxY = extras.getInt(Crop.Extra.MAX_Y);
-            saveUri = extras.getParcelable(MediaStore.EXTRA_OUTPUT);
-        }
-
-        sourceUri = intent.getData();
-        if (sourceUri != null) {
-            exifRotation = CropUtil.getExifRotation(CropUtil.getFromMediaUri(this, getContentResolver(), sourceUri));
+        final Intent intent = getIntent();
+        this.sourceUri = intent.getData();
+        if (this.sourceUri != null) {
+            this.sourceUri = CropUtil.getRealUri(this, this.sourceUri);
+            this.exifRotation = CropUtil.getExifRotation(CropUtil.getFromMediaUri(this, getContentResolver(), this.sourceUri));
 
             InputStream is = null;
             try {
-                sampleSize = calculateBitmapSampleSize(sourceUri);
-                is = getContentResolver().openInputStream(sourceUri);
-                BitmapFactory.Options option = new BitmapFactory.Options();
+                this.sampleSize = calculateBitmapSampleSize(this.sourceUri);
+                is = getContentResolver().openInputStream(this.sourceUri);
+                final BitmapFactory.Options option = new BitmapFactory.Options();
                 option.inSampleSize = sampleSize;
-                rotateBitmap = new RotateBitmap(BitmapFactory.decodeStream(is, null, option), exifRotation);
+                this.rotateBitmap = new RotateBitmap(BitmapFactory.decodeStream(is, null, option), this.exifRotation);
             } catch (IOException e) {
                 Log.e("Error reading image: " + e.getMessage(), e);
                 setResultException(e);
@@ -149,6 +184,7 @@ public class CropImageActivity extends MonitoredActivity {
                 CropUtil.closeSilently(is);
             }
         }
+
     }
 
     private int calculateBitmapSampleSize(Uri bitmapUri) throws IOException {
@@ -197,7 +233,7 @@ public class CropImageActivity extends MonitoredActivity {
                         final CountDownLatch latch = new CountDownLatch(1);
                         handler.post(new Runnable() {
                             public void run() {
-                                if (imageView.getScale() == 1F) {
+                                if (imageView.getScale() == 1f) {
                                     imageView.center();
                                 }
                                 latch.countDown();

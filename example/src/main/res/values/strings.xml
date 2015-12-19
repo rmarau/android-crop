@@ -1,6 +1,7 @@
 <resources>
 
     <string name="app_name">Crop Demo</string>
+    <string name="app_name_custom_layout">Crop Demo - Custom Layout</string>
     <string name="action_select">Pick</string>
 
 </resources>

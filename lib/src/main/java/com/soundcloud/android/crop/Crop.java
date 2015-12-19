@@ -21,6 +21,10 @@ public class Crop {
     public static final int RESULT_ERROR = 404;
 
     interface Extra {
+        String LAYOUT_ID = "layout_id";
+        String LAYOUT_ID_CROP_IMAGE = "id_crop_image";
+        String LAYOUT_ID_BTN_DONE = "id_btn_done";
+        String LAYOUT_ID_BTN_CANCEL = "id_btn_cancel";
         String ASPECT_X = "aspect_x";
         String ASPECT_Y = "aspect_y";
         String MAX_X = "max_x";
@@ -44,6 +48,22 @@ public class Crop {
         cropIntent = new Intent();
         cropIntent.setData(source);
         cropIntent.putExtra(MediaStore.EXTRA_OUTPUT, destination);
+    }
+
+    /**
+     * use a custom layout for the cropping activity
+     *
+     * @param layoutResId the resource id of the layout
+     * @param cropImageId the id of the crop image view
+     * @param btnDoneId   the id of the done button
+     * @param btnCancelId the id of the cancel button
+     */
+    public Crop useCustomLayout(final int layoutResId, final int cropImageId, final int btnDoneId, final int btnCancelId) {
+        cropIntent.putExtra(Extra.LAYOUT_ID, layoutResId);
+        cropIntent.putExtra(Extra.LAYOUT_ID_CROP_IMAGE, cropImageId);
+        cropIntent.putExtra(Extra.LAYOUT_ID_BTN_DONE, btnDoneId);
+        cropIntent.putExtra(Extra.LAYOUT_ID_BTN_CANCEL, btnCancelId);
+        return this;
     }
 
     /**

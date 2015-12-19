@@ -24,6 +24,7 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
+import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -87,6 +88,54 @@ class CropUtil {
         }
     }
 
+    /**
+     * expanding a shortened Uri from the gallery
+     * thanks to the solution of Vikram (http://stackoverflow.com/users/2558882/vikram)
+     * on stackOverflow http://stackoverflow.com/questions/20067508/get-real-path-from-uri-android-kitkat-new-storage-access-framework
+     * @param context the current context
+     * @param source the source Uri
+     * @return the expanded Uri
+     */
+    public static Uri getRealUri(final Context context, final Uri source) {
+
+        // Will return "image:x*"
+        String wholeID;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.KITKAT) {
+            wholeID = DocumentsContract.getDocumentId(source);
+        } else {
+            return source;
+        }
+
+        // Split at colon, use second item in the array
+        if (!wholeID.contains(":")) return source;
+        final String[] splitId = wholeID.split(":");
+        if (splitId.length < 2) return source;
+        final String id = splitId[1];
+
+        final String[] column = {MediaStore.Images.Media.DATA};
+
+        // where id is equal to
+        final String sel = MediaStore.Images.Media._ID + "=?";
+
+        final Cursor cursor = context
+                .getContentResolver()
+                .query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        column, sel, new String[]{id}, null);
+
+        String filePath = "";
+
+        if (cursor == null) return source;
+        int columnIndex = cursor.getColumnIndex(column[0]);
+
+        if (cursor.moveToFirst()) {
+            filePath = cursor.getString(columnIndex);
+        }
+
+        cursor.close();
+        return Uri.fromFile(new File(filePath));
+
+    }
+
     @Nullable
     public static File getFromMediaUri(Context context, ContentResolver resolver, Uri uri) {
         if (uri == null) return null;
@@ -94,7 +143,7 @@ class CropUtil {
         if (SCHEME_FILE.equals(uri.getScheme())) {
             return new File(uri.getPath());
         } else if (SCHEME_CONTENT.equals(uri.getScheme())) {
-            final String[] filePathColumn = { MediaStore.MediaColumns.DATA, MediaStore.MediaColumns.DISPLAY_NAME };
+            final String[] filePathColumn = {MediaStore.MediaColumns.DATA, MediaStore.MediaColumns.DISPLAY_NAME};
             Cursor cursor = null;
             try {
                 cursor = resolver.query(uri, filePathColumn, null, null, null);
@@ -158,7 +207,7 @@ class CropUtil {
     }
 
     public static void startBackgroundJob(MonitoredActivity activity,
-            String title, String message, Runnable job, Handler handler) {
+                                          String title, String message, Runnable job, Handler handler) {
         // Make the progress dialog uncancelable, so that we can guarantee
         // the thread will be done before the activity getting destroyed
         ProgressDialog dialog = ProgressDialog.show(
