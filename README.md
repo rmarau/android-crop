@@ -9,7 +9,7 @@ An Android library project that provides a simple image cropping `Activity`, bas
 ## Features
 
 * Gradle build & AAR
-* Modern UI
+* Modern UI or custom layouts
 * Backwards compatible to SDK 10
 * Simple builder for configuration
 * Example project
@@ -26,6 +26,12 @@ First, declare `CropImageActivity` in your manifest file:
 
 ```java
 Crop.of(inputUri, outputUri).asSquare().start(activity)
+```
+
+#### Using your own custom layouts
+
+```java
+Crop.useCustomLayout(layoutId, cropViewId, btnDoneId, btnCancelId).of(inputUri, outputUri).asSquare().start(activity)
 ```
 
 Listen for the result of the crop (see example project if you want to do some error handling):
@@ -59,7 +65,11 @@ compile 'com.soundcloud.android:android-crop:1.0.1@aar'
 
 #### Users
 
-Apps that use this library include: [SoundCloud](https://play.google.com/store/apps/details?id=com.soundcloud.android), [Depop](https://play.google.com/store/apps/details?id=com.depop), [Polyvore](https://play.google.com/store/apps/details?id=com.polyvore), [TextSecure](https://play.google.com/store/apps/details?id=org.thoughtcrime.securesms)
+Apps that use this library include:
+*[SoundCloud](https://play.google.com/store/apps/details?id=com.soundcloud.android)
+*[Depop](https://play.google.com/store/apps/details?id=com.depop)
+*[Polyvore](https://play.google.com/store/apps/details?id=com.polyvore)
+*[TextSecure](https://play.google.com/store/apps/details?id=org.thoughtcrime.securesms)
 
 ## How does it look?
 

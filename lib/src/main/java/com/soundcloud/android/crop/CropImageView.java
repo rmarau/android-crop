@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
 public class CropImageView extends ImageViewTouchBase {
 
-    ArrayList<HighlightView> highlightViews = new ArrayList<HighlightView>();
+    ArrayList<HighlightView> highlightViews = new ArrayList<>();
     HighlightView motionHighlightView;
     Context context;
 
@@ -126,7 +126,7 @@ public class CropImageView extends ImageViewTouchBase {
 
             // If we're not zoomed then there's no point in even allowing the user to move the image around.
             // This call to center puts it back to the normalized location.
-            if (getScale() == 1F) {
+            if (getScale() == 1f) {
                 center();
             }
             break;
@@ -164,17 +164,17 @@ public class CropImageView extends ImageViewTouchBase {
         float thisWidth = getWidth();
         float thisHeight = getHeight();
 
-        float z1 = thisWidth / width * .6F;
-        float z2 = thisHeight / height * .6F;
+        float z1 = thisWidth / width * .6f;
+        float z2 = thisHeight / height * .6f;
 
         float zoom = Math.min(z1, z2);
         zoom = zoom * this.getScale();
-        zoom = Math.max(1F, zoom);
+        zoom = Math.max(1f, zoom);
 
         if ((Math.abs(zoom - getScale()) / zoom) > .1) {
             float[] coordinates = new float[] { hv.cropRect.centerX(), hv.cropRect.centerY() };
             getUnrotatedMatrix().mapPoints(coordinates);
-            zoomTo(zoom, coordinates[0], coordinates[1], 300F);
+            zoomTo(zoom, coordinates[0], coordinates[1], 300f);
         }
 
         ensureVisible(hv);
