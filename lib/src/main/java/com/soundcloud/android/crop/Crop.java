@@ -62,7 +62,7 @@ public class Crop {
         cropIntent.putExtra(Extra.LAYOUT_ID, layoutResId);
         cropIntent.putExtra(Extra.LAYOUT_ID_CROP_IMAGE, cropImageId);
         cropIntent.putExtra(Extra.LAYOUT_ID_BTN_DONE, btnDoneId);
-        cropIntent.putExtra(Extra.LAYOUT_ID_BTN_CANCEL, btnDoneId);
+        cropIntent.putExtra(Extra.LAYOUT_ID_BTN_CANCEL, btnCancelId);
         return this;
     }
 
