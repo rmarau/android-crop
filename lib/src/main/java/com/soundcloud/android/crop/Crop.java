@@ -20,6 +20,8 @@ public class Crop {
     public static final int REQUEST_PICK = 9162;
     public static final int RESULT_ERROR = 404;
 
+    public static final String EXTRA_META_EXIF_ROTATION = "exif_rotation";
+
     interface Extra {
         String LAYOUT_ID = "layout_id";
         String LAYOUT_ID_CROP_IMAGE = "id_crop_image";

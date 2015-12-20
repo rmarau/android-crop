@@ -431,7 +431,7 @@ public class CropImageActivity extends MonitoredActivity {
                     CropUtil.getFromMediaUri(this, getContentResolver(), saveUri)
             );
 
-            setResultUri(saveUri);
+            setResultUri(this.saveUri, this.exifRotation);
         }
 
         final Bitmap b = croppedImage;
@@ -462,8 +462,12 @@ public class CropImageActivity extends MonitoredActivity {
         return isSaving;
     }
 
-    private void setResultUri(Uri uri) {
-        setResult(RESULT_OK, new Intent().putExtra(MediaStore.EXTRA_OUTPUT, uri));
+    private void setResultUri(final Uri uri, final int rotation) {
+        setResult(
+                RESULT_OK, new Intent()
+                        .putExtra(MediaStore.EXTRA_OUTPUT, uri)
+                        .putExtra(Crop.EXTRA_META_EXIF_ROTATION, rotation)
+        );
     }
 
     private void setResultException(Throwable throwable) {
