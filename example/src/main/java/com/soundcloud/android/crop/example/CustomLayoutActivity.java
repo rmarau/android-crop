@@ -56,7 +56,7 @@ public class CustomLayoutActivity extends Activity {
         Uri destination = Uri.fromFile(new File(getCacheDir(), "cropped"));
         Crop
                 .of(source, destination)
-                .asSquare()
+                .withAspect(5,3)
                 .useCustomLayout(
                         R.layout.activity_crop_custom,
                         R.id.crop_image,

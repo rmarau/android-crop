@@ -365,6 +365,13 @@ public class CropImageActivity extends MonitoredActivity {
             final int width = decoder.getWidth();
             final int height = decoder.getHeight();
 
+            final boolean orientationChanged = (exifRotation / 90) % 2 != 0;
+            if (orientationChanged) {
+                final int tmp = outWidth;
+                outWidth = outHeight;
+                outHeight = tmp;
+            }
+
             if (exifRotation != 0) {
                 // Adjust crop area to account for image rotation
                 Matrix matrix = new Matrix();
