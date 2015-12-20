@@ -330,11 +330,13 @@ public class CropImageActivity extends MonitoredActivity {
             return;
         }
 
-        if (croppedImage != null) {
+        /*if (croppedImage != null) {
             imageView.setImageRotateBitmapResetBase(new RotateBitmap(croppedImage, exifRotation), true);
             imageView.center();
             imageView.highlightViews.clear();
-        }
+        }*/
+        clearImageView();
+        imageView.highlightViews.clear();
         saveImage(croppedImage);
     }
 
@@ -355,7 +357,7 @@ public class CropImageActivity extends MonitoredActivity {
 
     private Bitmap decodeRegionCrop(Rect rect, int outWidth, int outHeight) {
         // Release memory now
-        clearImageView();
+        //clearImageView();
 
         InputStream is = null;
         Bitmap croppedImage = null;
@@ -387,9 +389,17 @@ public class CropImageActivity extends MonitoredActivity {
 
             try {
                 croppedImage = decoder.decodeRegion(rect, new BitmapFactory.Options());
+                Matrix matrix = new Matrix();
+                boolean needsCreateBitmap = false;
+                if (exifRotation != 0) {
+                    matrix.postRotate(exifRotation);
+                    needsCreateBitmap = true;
+                }
                 if (croppedImage != null && (rect.width() > outWidth || rect.height() > outHeight)) {
-                    Matrix matrix = new Matrix();
                     matrix.postScale((float) outWidth / rect.width(), (float) outHeight / rect.height());
+                    needsCreateBitmap = true;
+                }
+                if (needsCreateBitmap) {
                     croppedImage = Bitmap.createBitmap(croppedImage, 0, 0, croppedImage.getWidth(), croppedImage.getHeight(), matrix, true);
                 }
             } catch (IllegalArgumentException e) {
