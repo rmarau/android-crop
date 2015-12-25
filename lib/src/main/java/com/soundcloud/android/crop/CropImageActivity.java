@@ -35,6 +35,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -109,7 +110,7 @@ public class CropImageActivity extends MonitoredActivity {
 
                     @Override
                     public void onError(Throwable e) {
-
+                        e.printStackTrace();
                     }
 
                     @Override
@@ -406,7 +407,7 @@ public class CropImageActivity extends MonitoredActivity {
         Bitmap croppedImage = null;
         try {
             is = getContentResolver().openInputStream(sourceUri);
-            BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(is, false);
+            BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(new BufferedInputStream(is), false);
             final int width = decoder.getWidth();
             final int height = decoder.getHeight();
 
