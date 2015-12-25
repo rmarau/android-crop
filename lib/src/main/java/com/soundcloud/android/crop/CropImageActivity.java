@@ -17,6 +17,7 @@
 package com.soundcloud.android.crop;
 
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -38,6 +39,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.CountDownLatch;
+
+import rx.Observable;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action0;
+import rx.schedulers.Schedulers;
 
 /*
  * Modified from original in AOSP.
@@ -81,12 +88,35 @@ public class CropImageActivity extends MonitoredActivity {
 
         this.loadExtras();
         this.setupViews();
-        this.loadInput();
-        if (this.rotateBitmap == null) {
-            this.finish();
-            return;
-        }
-        this.startCrop();
+        this.loadInput()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnCompleted(new Action0() {
+                    @Override
+                    public void call() {
+                        if (rotateBitmap == null) {
+                            finish();
+                            return;
+                        }
+                        startCrop();
+                    }
+                })
+                .subscribe(new Subscriber<Void>() {
+                    @Override
+                    public void onCompleted() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onNext(Void aVoid) {
+
+                    }
+                });
 
     }
 
@@ -159,35 +189,44 @@ public class CropImageActivity extends MonitoredActivity {
      * get all the intent extras & setup the aspect ratio for the cropping,
      * define the maximum of the image size
      */
-    private void loadInput() {
+    private Observable<Void> loadInput() {
 
+        final Context context = this;
         final Intent intent = getIntent();
-        this.sourceUri = intent.getData();
-        if (this.sourceUri != null) {
-            final Uri exifUri = RealPathUtil.resolveUri(this, this.sourceUri);// CropUtil.getPath(this, this.sourceUri);
-            if (exifUri == null) {
-                this.exifRotation = 0;
-            } else {
-                this.exifRotation = CropUtil.getExifRotation(CropUtil.getFromMediaUri(this, getContentResolver(), exifUri));
-            }
+        return Observable.create(new Observable.OnSubscribe<Void>() {
+            @Override
+            public void call(Subscriber<? super Void> subscriber) {
 
-            InputStream is = null;
-            try {
-                this.sampleSize = calculateBitmapSampleSize(this.sourceUri);
-                is = getContentResolver().openInputStream(this.sourceUri);
-                final BitmapFactory.Options option = new BitmapFactory.Options();
-                option.inSampleSize = sampleSize;
-                this.rotateBitmap = new RotateBitmap(BitmapFactory.decodeStream(is, null, option), this.exifRotation);
-            } catch (IOException e) {
-                Log.e("Error reading image: " + e.getMessage(), e);
-                setResultException(e);
-            } catch (OutOfMemoryError e) {
-                Log.e("OOM reading image: " + e.getMessage(), e);
-                setResultException(e);
-            } finally {
-                CropUtil.closeSilently(is);
+                sourceUri = intent.getData();
+                if (sourceUri != null) {
+                    final Uri exifUri = RealPathUtil.resolveUri(context, sourceUri);// CropUtil.getPath(this, this.sourceUri);
+                    if (exifUri == null) {
+                        exifRotation = 0;
+                    } else {
+                        exifRotation = CropUtil.getExifRotation(CropUtil.getFromMediaUri(context, getContentResolver(), exifUri));
+                    }
+
+                    InputStream is = null;
+                    try {
+                        sampleSize = calculateBitmapSampleSize(sourceUri);
+                        is = getContentResolver().openInputStream(sourceUri);
+                        final BitmapFactory.Options option = new BitmapFactory.Options();
+                        option.inSampleSize = sampleSize;
+                        rotateBitmap = new RotateBitmap(BitmapFactory.decodeStream(is, null, option), exifRotation);
+                    } catch (IOException e) {
+                        Log.e("Error reading image: " + e.getMessage(), e);
+                        setResultException(e);
+                    } catch (OutOfMemoryError e) {
+                        Log.e("OOM reading image: " + e.getMessage(), e);
+                        setResultException(e);
+                    } finally {
+                        CropUtil.closeSilently(is);
+                    }
+                }
+                subscriber.onCompleted();
+
             }
-        }
+        });
 
     }
 
@@ -411,7 +450,6 @@ public class CropImageActivity extends MonitoredActivity {
                 throw new IllegalArgumentException("Rectangle " + rect + " is outside of the image ("
                         + width + "," + height + "," + exifRotation + ")", e);
             }
-
         } catch (IOException e) {
             Log.e("Error cropping image: " + e.getMessage(), e);
             setResultException(e);
