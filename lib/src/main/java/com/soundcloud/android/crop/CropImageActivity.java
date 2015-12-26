@@ -31,11 +31,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.support.annotation.Nullable;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -399,17 +399,80 @@ public class CropImageActivity extends MonitoredActivity {
         }
     }
 
+    /**
+     * will attempt to create a region decoder. If it fails due difficult encoding, return null
+     *
+     * @param sourceUri the source Uri of the image
+     * @return the decoder or null
+     */
+    @Nullable
+    private BitmapRegionDecoder loadBitmapRegionDecoder(final Uri sourceUri) {
+
+        InputStream is = null;
+        BitmapRegionDecoder decoder = null;
+        try {
+            is = this.getContentResolver().openInputStream(sourceUri);
+            decoder = BitmapRegionDecoder.newInstance(is, false);
+        } catch (IOException e) {
+            // we know this error, meh
+        } finally {
+            CropUtil.closeSilently(is);
+        }
+        return decoder;
+
+    }
+
+    /**
+     * will attempt to load the bitmap completely.
+     * @param sourceUri the source Uri of the image
+     * @return the loaded bitmap or null if it fails to load the image
+     */
+    @Nullable
+    private Bitmap loadOriginalImage(final Uri sourceUri) {
+
+        InputStream is = null;
+        try {
+            is = this.getContentResolver().openInputStream(sourceUri);
+            return BitmapFactory.decodeStream(is);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            CropUtil.closeSilently(is);
+        }
+        return null;
+
+    }
+
+    @Nullable
     private Bitmap decodeRegionCrop(Rect rect, int outWidth, int outHeight) {
+
         // Release memory now
         //clearImageView();
 
-        InputStream is = null;
+        Bitmap originalImage = null;
         Bitmap croppedImage = null;
+        BitmapRegionDecoder decoder;
+
+        // try to create the bitmap decoder
+        decoder = loadBitmapRegionDecoder(sourceUri);
+        if (decoder == null) {
+            // if the decoder creation fails, load the image completely instead
+            originalImage = loadOriginalImage(sourceUri);
+            if (originalImage == null) {
+                return null;
+            }
+        }
+
         try {
-            is = getContentResolver().openInputStream(sourceUri);
-            BitmapRegionDecoder decoder = BitmapRegionDecoder.newInstance(new BufferedInputStream(is), false);
-            final int width = decoder.getWidth();
-            final int height = decoder.getHeight();
+            final int width;
+            final int height;
+            if (decoder != null) {
+                width = decoder.getWidth();
+                height = decoder.getHeight();
+            } else {
+                width = originalImage.getWidth();
+                height = originalImage.getHeight();
+            }
 
             final boolean orientationChanged = (exifRotation / 90) % 2 != 0;
             if (orientationChanged) {
@@ -432,7 +495,14 @@ public class CropImageActivity extends MonitoredActivity {
             }
 
             try {
-                croppedImage = decoder.decodeRegion(rect, new BitmapFactory.Options());
+                if (decoder != null) {
+                    croppedImage = decoder.decodeRegion(rect, new BitmapFactory.Options());
+                } else {
+                    croppedImage = Bitmap.createBitmap(originalImage, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
+                    if (originalImage != croppedImage) {
+                        originalImage.recycle();
+                    }
+                }
                 Matrix matrix = new Matrix();
                 boolean needsCreateBitmap = false;
                 if (exifRotation != 0) {
@@ -451,14 +521,13 @@ public class CropImageActivity extends MonitoredActivity {
                 throw new IllegalArgumentException("Rectangle " + rect + " is outside of the image ("
                         + width + "," + height + "," + exifRotation + ")", e);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
+            //Log.e("Error cropping image: " + e.getMessage(), e);
             Log.e("Error cropping image: " + e.getMessage(), e);
             setResultException(e);
         } catch (OutOfMemoryError e) {
             Log.e("OOM cropping image: " + e.getMessage(), e);
             setResultException(e);
-        } finally {
-            CropUtil.closeSilently(is);
         }
         return croppedImage;
     }
