@@ -25,6 +25,7 @@ import android.graphics.BitmapRegionDecoder;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.opengl.GLES10;
 import android.os.Build;
@@ -38,6 +39,7 @@ import android.view.WindowManager;
 
 import org.bonnyfone.brdcompat.BitmapRegionDecoderCompat;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -92,8 +94,6 @@ public class CropImageActivity extends MonitoredActivity {
         this.loadExtras();
         this.setupViews();
         this.loadInput()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .doOnCompleted(new Action0() {
                     @Override
                     public void call() {
@@ -137,6 +137,8 @@ public class CropImageActivity extends MonitoredActivity {
     private void loadExtras() {
 
         final Intent intent = getIntent();
+        this.sourceUri = intent.getData();
+
         final Bundle extras = intent.getExtras();
 
         if (extras != null) {
@@ -195,18 +197,16 @@ public class CropImageActivity extends MonitoredActivity {
     private Observable<Void> loadInput() {
 
         final Context context = this;
-        final Intent intent = getIntent();
         return Observable.create(new Observable.OnSubscribe<Void>() {
             @Override
             public void call(Subscriber<? super Void> subscriber) {
 
-                sourceUri = intent.getData();
                 if (sourceUri != null) {
-                    final Uri exifUri = RealPathUtil.resolveUri(context, sourceUri);// CropUtil.getPath(this, this.sourceUri);
+                    final File exifUri = RealPathUtil.getFile(context, sourceUri);// CropUtil.getPath(this, this.sourceUri);
                     if (exifUri == null) {
                         exifRotation = 0;
                     } else {
-                        exifRotation = CropUtil.getExifRotation(CropUtil.getFromMediaUri(context, getContentResolver(), exifUri));
+                        exifRotation = CropUtil.getExifRotation(exifUri);// CropUtil.getExifRotation(CropUtil.getFromMediaUri(context, getContentResolver(), exifUri));
                     }
 
                     InputStream is = null;
