@@ -36,6 +36,8 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
+import org.bonnyfone.brdcompat.BitmapRegionDecoderCompat;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -406,13 +408,13 @@ public class CropImageActivity extends MonitoredActivity {
      * @return the decoder or null
      */
     @Nullable
-    private BitmapRegionDecoder loadBitmapRegionDecoder(final Uri sourceUri) {
+    private BitmapRegionDecoderCompat loadBitmapRegionDecoder(final Uri sourceUri) {
 
         InputStream is = null;
-        BitmapRegionDecoder decoder = null;
+        BitmapRegionDecoderCompat decoder = null;
         try {
             is = this.getContentResolver().openInputStream(sourceUri);
-            decoder = BitmapRegionDecoder.newInstance(is, false);
+            decoder = BitmapRegionDecoderCompat.newInstance(is, false);
         } catch (IOException e) {
             // we know this error, meh
         } finally {
@@ -424,6 +426,7 @@ public class CropImageActivity extends MonitoredActivity {
 
     /**
      * will attempt to load the bitmap completely.
+     *
      * @param sourceUri the source Uri of the image
      * @return the loaded bitmap or null if it fails to load the image
      */
@@ -451,7 +454,7 @@ public class CropImageActivity extends MonitoredActivity {
 
         Bitmap originalImage = null;
         Bitmap croppedImage = null;
-        BitmapRegionDecoder decoder;
+        BitmapRegionDecoderCompat decoder;
 
         // try to create the bitmap decoder
         decoder = loadBitmapRegionDecoder(sourceUri);
