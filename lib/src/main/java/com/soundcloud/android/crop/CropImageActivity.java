@@ -21,11 +21,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapRegionDecoder;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.media.ExifInterface;
 import android.net.Uri;
 import android.opengl.GLES10;
 import android.os.Build;
@@ -47,9 +45,7 @@ import java.util.concurrent.CountDownLatch;
 
 import rx.Observable;
 import rx.Subscriber;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action0;
-import rx.schedulers.Schedulers;
 
 /*
  * Modified from original in AOSP.
@@ -113,6 +109,8 @@ public class CropImageActivity extends MonitoredActivity {
                     @Override
                     public void onError(Throwable e) {
                         e.printStackTrace();
+                        setResultException(e);
+                        finish();
                     }
 
                     @Override
@@ -435,8 +433,11 @@ public class CropImageActivity extends MonitoredActivity {
 
         InputStream is = null;
         try {
+            final int sampleSize = calculateBitmapSampleSize(sourceUri);
             is = this.getContentResolver().openInputStream(sourceUri);
-            return BitmapFactory.decodeStream(is);
+            final BitmapFactory.Options option = new BitmapFactory.Options();
+            option.inSampleSize = sampleSize;
+            return BitmapFactory.decodeStream(is, null, option);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
