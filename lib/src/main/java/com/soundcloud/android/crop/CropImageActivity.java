@@ -213,6 +213,7 @@ public class CropImageActivity extends MonitoredActivity {
                         is = getContentResolver().openInputStream(sourceUri);
                         final BitmapFactory.Options option = new BitmapFactory.Options();
                         option.inSampleSize = sampleSize;
+                        option.inPreferredConfig = Bitmap.Config.ARGB_8888;
                         rotateBitmap = new RotateBitmap(BitmapFactory.decodeStream(is, null, option), exifRotation);
                     } catch (IOException e) {
                         Log.e("Error reading image: " + e.getMessage(), e);
@@ -436,6 +437,7 @@ public class CropImageActivity extends MonitoredActivity {
             final int sampleSize = calculateBitmapSampleSize(sourceUri);
             is = this.getContentResolver().openInputStream(sourceUri);
             final BitmapFactory.Options option = new BitmapFactory.Options();
+            option.inPreferredConfig = Bitmap.Config.ARGB_8888;
             option.inSampleSize = sampleSize;
             return BitmapFactory.decodeStream(is, null, option);
         } catch (IOException e) {
