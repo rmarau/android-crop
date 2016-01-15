@@ -200,7 +200,7 @@ public class CropImageActivity extends MonitoredActivity {
             public void call(Subscriber<? super Void> subscriber) {
 
                 if (sourceUri != null) {
-                    final File exifUri = RealPathUtil.getFile(context, sourceUri);// CropUtil.getPath(this, this.sourceUri);
+                    final File exifUri = new File(RealPathUtil.getRealPath(context, sourceUri));// CropUtil.getPath(this, this.sourceUri);
                     if (exifUri == null) {
                         exifRotation = 0;
                     } else {
