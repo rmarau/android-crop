@@ -16,9 +16,11 @@
 
 package com.soundcloud.android.crop;
 
+import android.Manifest;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -55,6 +57,10 @@ public class CropImageActivity extends MonitoredActivity {
     private static final int SIZE_DEFAULT = 2048;
     private static final int SIZE_LIMIT = 4096;
 
+    private final static int WRITE_PERMISSION_REQUEST = 5;
+    private final static int READ_PERMISSION_REQUEST = 4;
+
+
     private final Handler handler = new Handler();
 
     private int layoutResId = R.layout.crop__activity_crop;
@@ -73,8 +79,13 @@ public class CropImageActivity extends MonitoredActivity {
 
     private Uri sourceUri;
     private Uri saveUri;
+    private boolean canRead;
+    private boolean canWrite;
+    private boolean externalReadDenied=false;
+    private boolean externalWriteDenied=false;
 
     private boolean isSaving;
+    private boolean isLoaded=false;
 
     private int sampleSize;
     private RotateBitmap rotateBitmap;
@@ -89,35 +100,90 @@ public class CropImageActivity extends MonitoredActivity {
 
         this.loadExtras();
         this.setupViews();
-        this.loadInput()
-                .doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        if (rotateBitmap == null) {
-                            finish();
-                            return;
+
+        canRead=checkUriReadable(sourceUri);
+        canWrite=checkUriWritableAndClean(saveUri);
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        if (requestCode == WRITE_PERMISSION_REQUEST) {
+            if ( permissions!=null && permissions.length>0 && permissions[0].equals(Manifest.permission.WRITE_EXTERNAL_STORAGE) )
+                externalWriteDenied = !(grantResults[0] == PackageManager.PERMISSION_GRANTED);
+            return; //Handle no more...
+        }
+        if (requestCode == READ_PERMISSION_REQUEST) {
+            if ( permissions!=null && permissions.length>0 && permissions[0].equals(Manifest.permission.READ_EXTERNAL_STORAGE) )
+                externalReadDenied = !(grantResults[0] == PackageManager.PERMISSION_GRANTED);
+            return; //Handle no more...
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!canWrite /*&& ContentResolver.SCHEME_FILE.equals(saveUri.getScheme())*/) {
+                //May be lack of WRITE_EXTERNAL_STORAGE
+                if (this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED && !externalWriteDenied ) {
+                    requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_PERMISSION_REQUEST);
+                    return;
+                }
+            }
+
+            if (!canRead /*&& ContentResolver.SCHEME_FILE.equals(sourceUri.getScheme())*/) {
+                //May be lack of READ_EXTERNAL_STORAGE
+                if (this.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED && !externalReadDenied ) {
+                    requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, READ_PERMISSION_REQUEST);
+                    return;
+                }
+            }
+        }
+
+        //canRead and canWrite may have changed after onRequestPermissionsResult
+        canRead=checkUriReadable(sourceUri);
+        canWrite=checkUriWritableAndClean(saveUri);
+
+        if (!canRead)
+            setResultException(new Exception("Permition required for"+sourceUri.toString()));
+
+        if (!canWrite)
+            setResultException(new Exception("Permition required for"+saveUri.toString()));
+
+        if (!isLoaded)
+            this.loadInput()
+                    .doOnCompleted(new Action0() {
+                        @Override
+                        public void call() {
+                            if (rotateBitmap == null) {
+                                finish();
+                                return;
+                            }
+                            startCrop();
                         }
-                        startCrop();
-                    }
-                })
-                .subscribe(new Subscriber<Void>() {
-                    @Override
-                    public void onCompleted() {
+                    })
+                    .subscribe(new Subscriber<Void>() {
+                        @Override
+                        public void onCompleted() {
 
-                    }
+                        }
 
-                    @Override
-                    public void onError(Throwable e) {
-                        e.printStackTrace();
-                        setResultException(e);
-                        finish();
-                    }
+                        @Override
+                        public void onError(Throwable e) {
+                            e.printStackTrace();
+                            setResultException(e);
+                            finish();
+                        }
 
-                    @Override
-                    public void onNext(Void aVoid) {
+                        @Override
+                        public void onNext(Void aVoid) {
 
-                    }
-                });
+                        }
+                    });
+        isLoaded=true;
 
     }
 
@@ -561,12 +627,8 @@ public class CropImageActivity extends MonitoredActivity {
                 CropUtil.closeSilently(outputStream);
             }
 
-            /*CropUtil.copyExifRotation(
-                    CropUtil.getFromMediaUri(this, getContentResolver(), sourceUri),
-                    CropUtil.getFromMediaUri(this, getContentResolver(), saveUri)
-            );*/
             try {
-                ExifUtil.copyExif(CropUtil.getFromMediaUri(this, getContentResolver(), sourceUri).getAbsolutePath(),CropUtil.getFromMediaUri(this, getContentResolver(), saveUri).getAbsolutePath());
+                ExifUtil.copyExif(RealPathUtil.getPath(this, sourceUri),RealPathUtil.getPath(this, saveUri));
             } catch (Exception e) {
                 Log.e("Error copying Exif data", e);
             }
@@ -614,4 +676,51 @@ public class CropImageActivity extends MonitoredActivity {
         setResult(Crop.RESULT_ERROR, new Intent().putExtra(Crop.Extra.ERROR, throwable));
     }
 
+//    private boolean checkUriReadable(Uri uri){
+//        /* canRead() may not work */
+//        File file = new File(CropUtil.getPath(this, uri).getPath());
+//        return  (file!=null && file.canRead());
+//    }
+
+    private boolean checkUriReadable(Uri uri){
+        boolean ret=true;
+        InputStream is = null;
+        try {
+            RealPathUtil.getFile(getBaseContext(),uri); // This is necessary to cach SecurityException
+            is = getContentResolver().openInputStream(uri);
+        } catch (IOException e) {
+            ret=false;
+        } catch (SecurityException e) {
+            ret=false;
+        } finally {
+            CropUtil.closeSilently(is);
+        }
+        return ret;
+    }
+
+//    private boolean checkUriWritable(Uri uri){
+//        /* canWrite() may not work */
+//        File file = new File(CropUtil.getPath(this, uri).getPath());
+//        return  (file!=null && file.canWrite());
+//    }
+
+    private boolean checkUriWritableAndClean(Uri uri){
+        boolean ret=true;
+        OutputStream os = null;
+        try {
+            RealPathUtil.getFile(getBaseContext(),uri); // This is necessary to cach SecurityException
+            os = getContentResolver().openOutputStream(saveUri);
+        } catch (IOException e) {
+            ret=false;
+        } catch (SecurityException e) {
+            ret=false;
+        } finally {
+            CropUtil.closeSilently(os);
+        }
+
+        File f = RealPathUtil.getFile(this, uri);
+        if (f!=null) f.delete();
+
+        return ret;
+    }
 }
