@@ -48,14 +48,21 @@ public class ExifUtil {
         };
 
         ExifInterface newExif = new ExifInterface(newPath);
-        for ( String s: attributes )
-            newExif.setAttribute(s, oldExif.getAttribute(s));
+        for ( String s: attributes ){
+            String value = oldExif.getAttribute(s);
+            if (value!=null) newExif.setAttribute(s, value);
+        }
+
         if (Build.VERSION.SDK_INT >= 11)
-            for ( String s: attributes_v11 )
-                newExif.setAttribute(s, oldExif.getAttribute(s));
+            for ( String s: attributes_v11 ){
+                String value = oldExif.getAttribute(s);
+                if (value!=null) newExif.setAttribute(s, value);
+            }
         if (Build.VERSION.SDK_INT >= 23)
-            for ( String s: attributes_v23 )
-                newExif.setAttribute(s, oldExif.getAttribute(s));
+            for ( String s: attributes_v23 ){
+                String value = oldExif.getAttribute(s);
+                if (value!=null) newExif.setAttribute(s, value);
+            }
         newExif.saveAttributes();
     }
 }
