@@ -561,10 +561,15 @@ public class CropImageActivity extends MonitoredActivity {
                 CropUtil.closeSilently(outputStream);
             }
 
-            CropUtil.copyExifRotation(
+            /*CropUtil.copyExifRotation(
                     CropUtil.getFromMediaUri(this, getContentResolver(), sourceUri),
                     CropUtil.getFromMediaUri(this, getContentResolver(), saveUri)
-            );
+            );*/
+            try {
+                ExifUtil.copyExif(CropUtil.getFromMediaUri(this, getContentResolver(), sourceUri).getAbsolutePath(),CropUtil.getFromMediaUri(this, getContentResolver(), saveUri).getAbsolutePath());
+            } catch (Exception e) {
+                Log.e("Error copying Exif data", e);
+            }
 
             setResultUri(this.saveUri, this.exifRotation);
         }
