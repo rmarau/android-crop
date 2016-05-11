@@ -220,7 +220,7 @@ public class CropImageActivity extends MonitoredActivity {
             this.resIdBtnDone = extras.getInt(Crop.Extra.LAYOUT_ID_BTN_DONE, R.id.btn_done);
             this.resIdBtnCancel = extras.getInt(Crop.Extra.LAYOUT_ID_BTN_CANCEL, R.id.btn_cancel);
 
-            this.loopbackTag = extras.getString(Crop.Extra.LOOPBACK_DATA); //null - default
+            this.loopbackTag = extras.getString(Crop.EXTRA_LOOPBACK_DATA); //null - default
         }
 
 
@@ -648,7 +648,7 @@ public class CropImageActivity extends MonitoredActivity {
                 Log.e("Error copying Exif data", e);
             }
 
-            setResultUri(this.saveUri, this.exifRotation);
+            setResultUri(this.saveUri, this.exifRotation, croppedImage.getWidth(), croppedImage.getHeight());
         }
 
         final Bitmap b = croppedImage;
@@ -679,19 +679,21 @@ public class CropImageActivity extends MonitoredActivity {
         return isSaving;
     }
 
-    private void setResultUri(final Uri uri, final int rotation) {
+    private void setResultUri(final Uri uri, final int rotation, final int width, final int height) {
         setResult(
                 RESULT_OK, new Intent()
                         .putExtra(MediaStore.EXTRA_OUTPUT, uri)
                         .putExtra(Crop.EXTRA_META_EXIF_ROTATION, rotation)
-                        .putExtra(Crop.Extra.LOOPBACK_DATA, loopbackTag)
+                        .putExtra(Crop.EXTRA_LOOPBACK_DATA, loopbackTag)
+                        .putExtra(Crop.EXTRA_DATA_WIDTH, width)
+                        .putExtra(Crop.EXTRA_DATA_HEIGHT, height)
         );
     }
 
     private void setResultException(Throwable throwable) {
         setResult(Crop.RESULT_ERROR, new Intent()
                 .putExtra(Crop.Extra.ERROR, throwable)
-                .putExtra(Crop.Extra.LOOPBACK_DATA, loopbackTag)
+                .putExtra(Crop.EXTRA_LOOPBACK_DATA, loopbackTag)
         );
     }
 

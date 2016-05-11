@@ -21,6 +21,9 @@ public class Crop {
     public static final int RESULT_ERROR = 404;
 
     public static final String EXTRA_META_EXIF_ROTATION = "exif_rotation";
+    public static final String EXTRA_LOOPBACK_DATA = "loopbackdata";
+    public static final String EXTRA_DATA_WIDTH = "width";
+    public static final String EXTRA_DATA_HEIGHT = "height";
 
     interface Extra {
         String LAYOUT_ID = "layout_id";
@@ -32,7 +35,6 @@ public class Crop {
         String MAX_X = "max_x";
         String MAX_Y = "max_y";
         String JPG_QUALITY = "jpg_quality";
-        String LOOPBACK_DATA = "loopbackdata";
         String ERROR = "error";
     }
 
@@ -121,7 +123,7 @@ public class Crop {
      * @param data Data String
      */
     public Crop withLoopbackTag(String data) {
-        cropIntent.putExtra(Extra.LOOPBACK_DATA, data);
+        cropIntent.putExtra(EXTRA_LOOPBACK_DATA, data);
         return this;
     }
 
