@@ -32,6 +32,7 @@ public class Crop {
         String MAX_X = "max_x";
         String MAX_Y = "max_y";
         String JPG_QUALITY = "jpg_quality";
+        String LOOPBACK_DATA = "loopbackdata";
         String ERROR = "error";
     }
 
@@ -111,6 +112,16 @@ public class Crop {
         if ( (quality>=10) || (quality<=100) ) {
             cropIntent.putExtra(Extra.JPG_QUALITY, quality);
         }
+        return this;
+    }
+
+    /**
+     * Set a Tag with metadata that will be available back with onResult
+     *
+     * @param data Data String
+     */
+    public Crop withLoopbackTag(String data) {
+        cropIntent.putExtra(Extra.LOOPBACK_DATA, data);
         return this;
     }
 

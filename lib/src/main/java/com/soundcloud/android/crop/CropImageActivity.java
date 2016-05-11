@@ -92,6 +92,8 @@ public class CropImageActivity extends MonitoredActivity {
     private CropImageView imageView;
     private HighlightView cropView;
 
+    private String loopbackTag;
+
     @Override
     public void onCreate(final Bundle icicle) {
 
@@ -217,6 +219,8 @@ public class CropImageActivity extends MonitoredActivity {
             this.resIdCropImage = extras.getInt(Crop.Extra.LAYOUT_ID_CROP_IMAGE, R.id.crop_image);
             this.resIdBtnDone = extras.getInt(Crop.Extra.LAYOUT_ID_BTN_DONE, R.id.btn_done);
             this.resIdBtnCancel = extras.getInt(Crop.Extra.LAYOUT_ID_BTN_CANCEL, R.id.btn_cancel);
+
+            this.loopbackTag = extras.getString(Crop.Extra.LOOPBACK_DATA); //null - default
         }
 
 
@@ -680,11 +684,15 @@ public class CropImageActivity extends MonitoredActivity {
                 RESULT_OK, new Intent()
                         .putExtra(MediaStore.EXTRA_OUTPUT, uri)
                         .putExtra(Crop.EXTRA_META_EXIF_ROTATION, rotation)
+                        .putExtra(Crop.Extra.LOOPBACK_DATA, loopbackTag)
         );
     }
 
     private void setResultException(Throwable throwable) {
-        setResult(Crop.RESULT_ERROR, new Intent().putExtra(Crop.Extra.ERROR, throwable));
+        setResult(Crop.RESULT_ERROR, new Intent()
+                .putExtra(Crop.Extra.ERROR, throwable)
+                .putExtra(Crop.Extra.LOOPBACK_DATA, loopbackTag)
+        );
     }
 
 //    private boolean checkUriReadable(Uri uri){
